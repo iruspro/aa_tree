@@ -63,5 +63,22 @@ let rec t_max = function
   | Cons { right = Nil; key; _ } -> Some key
   | Cons { right; _ } -> t_max right
 
-let rec successor = function Nil -> None | Cons { right } -> t_min right
-let rec predecessor = function Nil -> None | Cons { left } -> t_max left
+let successor = function
+  | Nil -> Nil
+  | Cons { right; _ } ->
+      let rec leftmost = function
+        | Nil -> Nil
+        | Cons { left = Nil; _ } as node -> node
+        | Cons { left; _ } -> leftmost left
+      in
+      leftmost right
+
+let predecessor = function
+  | Nil -> Nil
+  | Cons { left; _ } ->
+      let rec rightmost = function
+        | Nil -> Nil
+        | Cons { right = Nil; _ } as node -> node
+        | Cons { right; _ } -> rightmost right
+      in
+      rightmost left
