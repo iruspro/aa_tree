@@ -41,3 +41,14 @@ let rec search key = function
       if key = k then true
       else if key < k then search key left
       else search key right
+
+let rec insert key = function
+  | Nil -> Cons { left = Nil; right = Nil; key; level = 1 }
+  | Cons ({ key = k; left; right; _ } as node) as tree ->
+      if key = k then tree
+      else
+        let tree' =
+          if key < k then Cons { node with left = insert key left }
+          else Cons { node with right = insert key right }
+        in
+        tree' |> skew |> split
