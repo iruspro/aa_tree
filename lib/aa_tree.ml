@@ -7,14 +7,14 @@ let empty = Nil
 let rotate_right = function
   | Nil -> Nil
   | Cons { left = Nil; _ } as tree -> tree
-  | Cons ({ left = Cons l_node; _ } as tree) ->
-      Cons { l_node with right = Cons { tree with left = l_node.right } }
+  | Cons ({ left = Cons l_node; _ } as node) ->
+      Cons { l_node with right = Cons { node with left = l_node.right } }
 
 let rotate_left = function
   | Nil -> Nil
   | Cons { right = Nil; _ } as tree -> tree
-  | Cons ({ right = Cons r_node; _ } as tree) ->
-      Cons { r_node with left = Cons { tree with right = r_node.left } }
+  | Cons ({ right = Cons r_node; _ } as node) ->
+      Cons { r_node with left = Cons { node with right = r_node.left } }
 
 let skew = function
   | Nil -> Nil
