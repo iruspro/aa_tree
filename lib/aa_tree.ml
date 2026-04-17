@@ -52,3 +52,16 @@ let rec insert key = function
           else Cons { node with right = insert key right }
         in
         tree' |> skew |> split
+
+let rec t_min = function
+  | Nil -> None
+  | Cons { left = Nil; key; _ } -> Some key
+  | Cons { left; _ } -> t_min left
+
+let rec t_max = function
+  | Nil -> None
+  | Cons { right = Nil; key; _ } -> Some key
+  | Cons { right; _ } -> t_max right
+
+let rec successor = function Nil -> None | Cons { right } -> t_min right
+let rec predecessor = function Nil -> None | Cons { left } -> t_max left
