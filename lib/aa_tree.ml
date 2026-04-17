@@ -117,3 +117,77 @@ let rec delete key = function
       tree' |> decrease_level |> skew |> update_right skew
       |> update_right (update_right skew)
       |> split |> update_right split
+
+let to_string to_s tree =
+  let rec build rank depth = function
+    | Nil -> (rank, None, [])
+    | Cons { key; left; right; level; _ } ->
+        let rank, l_root, l_nodes = build rank (depth + 1) left in
+        let my_rank = rank in
+        let right_depth =
+          match right with
+          | Cons { level = rl; _ } when rl = level -> depth
+          | _ -> depth + 1
+        in
+        let rank, r_root, r_nodes = build (rank + 1) right_depth right in
+        let info = (my_rank, depth, level, to_s key, l_root, r_root) in
+        (rank, Some my_rank, l_nodes @ [ info ] @ r_nodes)
+  in
+  let n, _, nodes = build 0 0 tree in
+  if n = 0 then ""
+  else
+    let key_w =
+      List.fold_left
+        (fun a (_, _, _, s, _, _) -> max a (String.length s))
+        1 nodes
+    in
+    let col_unit = key_w + 1 in
+    let canvas_w = ((n - 1) * col_unit) + key_w in
+    let max_depth =
+      List.fold_left (fun a (_, d, _, _, _, _) -> max a d) 0 nodes
+    in
+    let canvas_h = (2 * max_depth) + 1 in
+    let canvas = Array.init canvas_h (fun _ -> Bytes.make canvas_w ' ') in
+    let depths = Array.make n 0 in
+    List.iter (fun (r, d, _, _, _, _) -> depths.(r) <- d) nodes;
+    List.iter
+      (fun (r, d, _, s, _, _) ->
+        Bytes.blit_string s 0 canvas.(d * 2) (r * col_unit) (String.length s))
+      nodes;
+    List.iter
+      (fun (r, d, _, s, l_root, r_root) ->
+        let my_col = r * col_unit in
+        let s_len = String.length s in
+        (match l_root with
+        | Some lr ->
+            let mid = (my_col + (lr * col_unit)) / 2 in
+            Bytes.set canvas.((d * 2) + 1) mid '/'
+        | None -> ());
+        match r_root with
+        | None -> ()
+        | Some rr ->
+            let rc = rr * col_unit in
+            if depths.(rr) = d then
+              for c = my_col + s_len to rc - 1 do
+                Bytes.set canvas.(d * 2) c '-'
+              done
+            else
+              let mid = (my_col + rc) / 2 in
+              Bytes.set canvas.((d * 2) + 1) mid '\\')
+      nodes;
+    let row_level = Array.make canvas_h None in
+    List.iter
+      (fun (_, d, lv, _, _, _) ->
+        if row_level.(d * 2) = None then row_level.(d * 2) <- Some lv)
+      nodes;
+    let buf = Buffer.create 256 in
+    for r = 0 to canvas_h - 1 do
+      (match row_level.(r) with
+      | Some lv -> Buffer.add_string buf (Printf.sprintf "%2d | " lv)
+      | None -> Buffer.add_string buf "   | ");
+      Buffer.add_string buf (Bytes.to_string canvas.(r));
+      Buffer.add_char buf '\n'
+    done;
+    Buffer.contents buf
+
+let print to_s tree = print_string (to_string to_s tree)
