@@ -33,3 +33,11 @@ let split = function
         match rotate_left tree with
         | Cons n -> Cons { n with level = n.level + 1 }
         | Nil -> assert false)
+
+(* FUNCTIONS *)
+let rec search key = function
+  | Nil -> false
+  | Cons { key = k; left; right; _ } ->
+      if key = k then true
+      else if key < k then search key left
+      else search key right
