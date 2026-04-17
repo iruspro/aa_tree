@@ -1,5 +1,8 @@
 type 'a t = Nil | Cons of { left : 'a t; right : 'a t; key : 'a; level : int }
 
+(* GETTERS *)
+let empty = Nil
+
 (* HELPERS *)
 let rotate_right = function
   | Nil -> Nil
