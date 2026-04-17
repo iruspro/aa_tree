@@ -82,3 +82,38 @@ let predecessor = function
         | Cons { right; _ } -> rightmost right
       in
       rightmost left
+
+let decrease_level = function
+  | Nil -> Nil
+  | Cons ({ left; right; level; _ } as node) as tree ->
+      let level_of = function Nil -> 0 | Cons { level; _ } -> level in
+      let should_be = min (level_of left) (level_of right) + 1 in
+      if should_be >= level then tree
+      else
+        let right' =
+          match right with
+          | Cons ({ level = r_level; _ } as r_node) when should_be < r_level ->
+              Cons { r_node with level = should_be }
+          | _ -> right
+        in
+        Cons { node with level = should_be; right = right' }
+
+let update_right f = function
+  | Nil -> Nil
+  | Cons ({ right; _ } as node) -> Cons { node with right = f right }
+
+let rec delete key = function
+  | Nil -> Nil
+  | Cons ({ key = k; left; right; _ } as node) as tree ->
+      let tree' =
+        if key < k then Cons { node with left = delete key left }
+        else if key > k then Cons { node with right = delete key right }
+        else
+          match successor tree with
+          | Nil -> Nil
+          | Cons { key = s_key; _ } ->
+              Cons { node with key = s_key; right = delete s_key right }
+      in
+      tree' |> decrease_level |> skew |> update_right skew
+      |> update_right (update_right skew)
+      |> split |> update_right split
