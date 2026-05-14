@@ -4,6 +4,18 @@ type 'a t = Nil | Cons of { left : 'a t; right : 'a t; key : 'a; level : int }
 let empty = Nil
 
 (* HELPERS *)
+let update_left f = function
+  | Nil -> Nil
+  | Cons ({ left; _ } as node) -> Cons { node with left = f left }
+
+let update_right f = function
+  | Nil -> Nil
+  | Cons ({ right; _ } as node) -> Cons { node with right = f right }
+
+let left = function Nil -> Nil | Cons { left; _ } -> left
+let right = function Nil -> Nil | Cons { right; _ } -> right
+let level_of = function Nil -> 0 | Cons { level; _ } -> level
+
 let rotate_right = function
   | Nil -> Nil
   | Cons { left = Nil; _ } as tree -> tree
@@ -44,12 +56,12 @@ let rec search key = function
 
 let rec insert key = function
   | Nil -> Cons { left = Nil; right = Nil; key; level = 1 }
-  | Cons ({ key = k; left; right; _ } as node) as tree ->
+  | Cons { key = k; _ } as tree ->
       if key = k then tree
       else
         let tree' =
-          if key < k then Cons { node with left = insert key left }
-          else Cons { node with right = insert key right }
+          if key < k then update_left (insert key) tree
+          else update_right (insert key) tree
         in
         tree' |> skew |> split
 
@@ -63,30 +75,19 @@ let rec t_max = function
   | Cons { right = Nil; key; _ } -> Some key
   | Cons { right; _ } -> t_max right
 
-let successor = function
-  | Nil -> Nil
-  | Cons { right; _ } ->
-      let rec leftmost = function
-        | Nil -> Nil
-        | Cons { left = Nil; _ } as node -> node
-        | Cons { left; _ } -> leftmost left
-      in
-      leftmost right
+let successor tree =
+  let rec leftmost t = match left t with Nil -> t | _ -> leftmost (left t) in
+  leftmost (right tree)
 
-let predecessor = function
-  | Nil -> Nil
-  | Cons { left; _ } ->
-      let rec rightmost = function
-        | Nil -> Nil
-        | Cons { right = Nil; _ } as node -> node
-        | Cons { right; _ } -> rightmost right
-      in
-      rightmost left
+let predecessor tree =
+  let rec rightmost t =
+    match right t with Nil -> t | _ -> rightmost (right t)
+  in
+  rightmost (left tree)
 
 let decrease_level = function
   | Nil -> Nil
   | Cons ({ left; right; level; _ } as node) as tree ->
-      let level_of = function Nil -> 0 | Cons { level; _ } -> level in
       let should_be = min (level_of left) (level_of right) + 1 in
       if should_be >= level then tree
       else
@@ -98,16 +99,12 @@ let decrease_level = function
         in
         Cons { node with level = should_be; right = right' }
 
-let update_right f = function
-  | Nil -> Nil
-  | Cons ({ right; _ } as node) -> Cons { node with right = f right }
-
 let rec delete key = function
   | Nil -> Nil
-  | Cons ({ key = k; left; right; _ } as node) as tree ->
+  | Cons ({ key = k; right; _ } as node) as tree ->
       let tree' =
-        if key < k then Cons { node with left = delete key left }
-        else if key > k then Cons { node with right = delete key right }
+        if key < k then update_left (delete key) tree
+        else if key > k then update_right (delete key) tree
         else
           match successor tree with
           | Nil -> Nil
